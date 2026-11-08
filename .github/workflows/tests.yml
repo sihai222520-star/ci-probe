@@ -1,0 +1,27 @@
+# BC 服务端 CI v0.1（chore/ci-bootstrap 分支预置，激活=push 本分支，须老板点头+授权）
+# 范围：主助理方案①自动测试 + ④输出精简+缓存；golangci-lint 体检为方案②，明天补
+name: tests
+on:
+  push:
+  pull_request:
+
+jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go (module version from go.mod, build cache on)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run all tests (concise output)
+        run: |
+          go test ./... -count=1 2>&1 | tee /tmp/gotest.log
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: Failure digest (only failing packages/tests)
+        if: failure()
+        run: grep -E "^(--- FAIL|FAIL|ok  )" /tmp/gotest.log | head -50
